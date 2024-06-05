@@ -1,6 +1,8 @@
 using API.Data;
+using API.Entities;
 using API.Extensions;
 using API.Middleware;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,7 +14,6 @@ builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddIdentityServices(builder.Configuration);
 
 var app = builder.Build();
-
 
 
 // Configure the HTTP request pipeline.
@@ -33,8 +34,10 @@ var services = scope.ServiceProvider;
 try
 {
     var dataContext = services.GetRequiredService<DataContext>();
+    var userManager = services.GetRequiredService<UserManager<AppUser>>();
+    var roleManager = services.GetRequiredService<RoleManager<AppRole>>();
     await dataContext.Database.MigrateAsync();
-    await Seed.SeedUsers(dataContext);
+    await Seed.SeedUsers(userManager, roleManager);
 }
 catch (Exception ex)
 {
