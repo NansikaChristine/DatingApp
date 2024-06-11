@@ -1,6 +1,4 @@
-﻿using System.Security.Claims;
-using API.Data;
-using API.DTOs;
+﻿using API.DTOs;
 using API.Entities;
 using API.Extensions;
 using API.Helpers;
@@ -8,7 +6,6 @@ using API.Interfaces;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers
 {
@@ -43,10 +40,11 @@ namespace API.Controllers
             return Ok(users);
         }
 
-        [HttpGet("{username}")]
+        [HttpGet("{username}", Name = "GetUser")]
         public async Task<ActionResult<MemberDto>> GetUser(string username)
         {
-            return await _unitOfWork.UserRepository.GetMemberAsync(username);
+            var CurrentUsername = User.GetUsername();
+            return await _unitOfWork.UserRepository.GetMemberAsync(username, isCurrentUser: CurrentUsername == username);
         }
 
         [HttpPut]
@@ -80,13 +78,11 @@ namespace API.Controllers
                 PublicId = result.PublicId
             };
 
-            if (user.Photos.Count == 0) photo.IsMain = true;
-
             user.Photos.Add(photo);
 
             if (await _unitOfWork.Complete())
             {
-                return CreatedAtAction(nameof(GetUser), new {username = user.UserName}, _mapper.Map<PhotoDto>(photo));
+                return CreatedAtRoute("GetUser", new {username = user.UserName}, _mapper.Map<PhotoDto>(photo));
             }
 
             return BadRequest("Problem adding photo");
@@ -121,7 +117,7 @@ namespace API.Controllers
         {
             var user = await _unitOfWork.UserRepository.GetUserByNameAsync(User.GetUsername());
 
-            var photo = user.Photos.FirstOrDefault(x => x.Id == photoId);
+            var photo = await _unitOfWork.PhotoRepository.GetPhotoById(photoId);
 
             if (photo == null) return NotFound();
 

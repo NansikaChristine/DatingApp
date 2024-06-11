@@ -11,6 +11,7 @@ namespace API.Data
         {
         }
 
+        public DbSet<Photo> Photos { get; set; }
         public DbSet<UserLike> Likes { get; set; }
         public DbSet<Message> Messages { get; set; }
         public DbSet<Group> Groups { get; set; }
@@ -56,6 +57,8 @@ namespace API.Data
                 .HasOne(u => u.Sender)
                 .WithMany(m => m.MessageSent)
                 .OnDelete(DeleteBehavior.Restrict);
+            
+            builder.Entity<Photo>().HasQueryFilter(p => p.IsApproved);
         }
     }
 }
